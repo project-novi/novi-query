@@ -1,7 +1,7 @@
 use winnow::error::ErrMode;
 use winnow::stream::{Location, Stream};
 use winnow::{
-    ascii::{line_ending, multispace0, till_line_ending},
+    ascii::{multispace0, till_line_ending},
     combinator::{
         alt, cut_err, delimited, eof, fail, opt, preceded, repeat, separated, separated_pair, seq,
         terminated,
