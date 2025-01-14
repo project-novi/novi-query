@@ -1,4 +1,4 @@
-    use crate::{
+use crate::{
     graph::{
         Expr, Graph, GraphError, GraphErrorKind, RawSubject, Relation, RelationContext, Subject,
         SubjectExtra, SubjectId,
@@ -98,6 +98,15 @@ impl Query {
 
     pub fn is_match(&self, graph: &mut TagGraph) -> bool {
         let graph = graph.indexed();
+        if !graph
+            .graph
+            .root()
+            .extra
+            .match_expr(&self.0.root().extra.query)
+        {
+            return false;
+        }
+
         let mut choices = vec![SubjectId(0); self.0.len()];
         self.search(graph, SubjectId(1), &mut choices)
     }
