@@ -69,7 +69,7 @@ fn top_level(input: &mut Text) -> PResult<(RawSubject, Vec<MetaQuery>)> {
     ));
     let mut items = vec![];
     loop {
-        multispace0.parse_next(input)?;
+        multiline0.parse_next(input)?;
         let start = input.checkpoint();
         match item.parse_next(input) {
             Ok(item) => items.push(item),
@@ -115,11 +115,6 @@ fn multiline0(input: &mut Text) -> PResult<()> {
         multispace0,
         repeat(0.., (comment, multispace0)).map(|()| ()),
     )
-        .void()
-        .parse_next(input)
-}
-fn multiline1(input: &mut Text) -> PResult<()> {
-    (whitespace0, opt(comment), line_ending, multiline0)
         .void()
         .parse_next(input)
 }
@@ -210,19 +205,24 @@ fn subject_relation(input: &mut Text) -> PResult<RelationRef> {
     .parse_next(input)
 }
 fn subject_body(input: &mut Text) -> PResult<Vec<RawSubject>> {
-    preceded(
-        ('{', multiline0),
-        cut_err(terminated(
-            separated(0.., subject, multiline1),
-            alt((
-                (multiline0, '}').void(),
-                fail.map(|()| ())
-                    .context(StrContext::Expected(StrContextValue::Description("}"))),
-            )),
-        )),
-    )
-    .context(StrContext::Label("subject body"))
-    .parse_next(input)
+    '{'.parse_next(input)?;
+
+    let mut subjects = vec![];
+    loop {
+        multiline0.parse_next(input)?;
+        let start = input.checkpoint();
+        match subject.parse_next(input) {
+            Ok(subject) => subjects.push(subject),
+            Err(ErrMode::Backtrack(_)) => {
+                input.reset(&start);
+                cut_err('}'.context(StrContext::Expected(StrContextValue::Description("}"))))
+                    .parse_next(input)?;
+                break;
+            }
+            Err(e) => return Err(e),
+        }
+    }
+    Ok(subjects)
 }
 
 fn expr(input: &mut Text) -> PResult<Expr> {
